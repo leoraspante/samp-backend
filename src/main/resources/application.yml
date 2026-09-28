@@ -1,0 +1,40 @@
+# Nome da aplicação.
+spring:
+  application:
+    name: samp
+
+  # Configuração do Banco de Dados (H2 - em Memória).
+  datasource:
+    url: jdbc:h2:mem:sampdb
+    driverClassName: org.h2.Driver
+    username: admin
+    password: admin
+
+  # Habilitação do gerenciamento via Console Web do H2. (localhost:8080/h2-console).
+  h2:
+    console:
+      enabled: true
+
+  # Hibernate DDL Auto (Criação e Atualização automática de tabelas).
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Porta padrão de conexão.
+server:
+  port: 8080
+
+# Configuração de produção (PostgreSQL)
+# spring:
+#   datasource:
+#     url: jdbc:postgresql://localhost:5432/sampdb
+#     username: postgres
+#     password: suasenha
+#     driver-class-name: org.postgresql.Driver
+#   jpa:
+#     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
