@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Objects;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_product")     // Nome da tabela no banco de dados.
@@ -54,6 +56,10 @@ public class Product implements Serializable {
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    // Relacionamento Um-para-Muitos contemplando as fotos com instruções de montagem.
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
 
     // Getters e Setters.
     public Long getId() {
@@ -106,6 +112,25 @@ public class Product implements Serializable {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public List<ProductImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ProductImage> images) {
+        this.images = images;
+    }
+
+    // Métodos utilitários para auxiliar a gestão de fotos.
+    public void addImage(ProductImage image) {
+        images.add(image);
+        image.setProduct(this);
+    }
+
+    public void removeImage(ProductImage image) {
+        images.remove(image);
+        image.setProduct(null);
     }
 
     // Equals() e HashCode().
