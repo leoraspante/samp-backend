@@ -12,11 +12,11 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // Busca produto pelo código único de SKU.
-    Optional<Product> findBySku(String sku);
+    Optional<Product> findByCode(String code);
 
     // Busca produtos cujo nome contenha o termo pesquisado (Insensível a maiúsculas/minúsculas).
     List<Product> findByNameContainingIgnoreCase(String name);
 
     // Verifica se já existe o produto cadastrado com o SKU informado.
-    boolean existsBySku(String sku);
+    boolean existsByCode(String code);
 }
