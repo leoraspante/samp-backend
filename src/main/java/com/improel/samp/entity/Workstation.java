@@ -27,16 +27,21 @@ public class Workstation implements Serializable {
     @Column(nullable = false, length = 30)
     private WorkstationStatus status = WorkstationStatus.ACTIVE;
 
+    // Vínculo lógico com o dispositivo físico da bancada (Tablet).
+    @Column(name = "tablet_uuid", unique = true, length = 100)
+    private String tabletUuid;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt ;
 
     // Construtores.
     public Workstation() {}
 
-    public Workstation(Long id, String name, WorkstationStatus status) {
+    public Workstation(Long id, String name, WorkstationStatus status, String tabletUuid) {
         this.id = id;
         this.name = name;
         this.status = (status != null) ? status : WorkstationStatus.ACTIVE;
+        this.tabletUuid = tabletUuid;
     }
 
     // Callback JPA para preencher a data de criação antes de salvar no banco.
@@ -70,6 +75,13 @@ public class Workstation implements Serializable {
         this.status = status;
     }
 
+    public String getTabletUuid() {
+        return tabletUuid;
+    }
+    public void setTabletUuid(String tabletUuid) {
+        this.tabletUuid = tabletUuid;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -93,11 +105,13 @@ public class Workstation implements Serializable {
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         String formattedCreatedAt = (createdAt != null) ? createdAt.format(formatter) : "N/A";
+        String formattedUuid = (tabletUuid != null && tabletUuid.isBlank()) ? tabletUuid : "Não vinculado";
 
         return "Workstation {" +
                 "ID=" + id +
                 ", Bancada='" + name + '\'' +
                 ", Estado=" + (status != null ? status.getDescription() : "N/A") +
+                ", Tablet UUID='" + tabletUuid + '\'' +
                 ", Criado em=" + formattedCreatedAt +
                 '}';
     }
