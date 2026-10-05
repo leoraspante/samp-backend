@@ -36,6 +36,9 @@ public class WorkstationService {
     // Cadastra ou atualiza uma bancada de montagem.
     @Transactional
     public Workstation save (Workstation workstation) {
+        if (workstation.getId() == null && workstation.getName() != null && workstationRepository.existsByName(workstation.getName())) {
+            throw new IllegalArgumentException("Já existe uma bancada cadastrada com este nome.");
+        }
         return workstationRepository.save(workstation);
     }
 
