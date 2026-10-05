@@ -10,14 +10,14 @@ import java.util.Optional;
 @Repository
 public interface WorkstationRepository extends JpaRepository<Workstation, Long> {
 
-    // Busca uma bancada pelo seu código identificador (ex: "ST-01").
-    Optional<Workstation> findByWorkstationCode(String workstationCode);
+    // Busca uma bancada pelo seu código nome (ex: "ST-01").
+    Optional<Workstation> findByName(String name);
 
     // Busca a bancada vinculada ao UUID do tablet da bancada.
     Optional<Workstation> findByTabletUuid(String tabletUuid);
 
-    // Verifica se já existe uma bancada cadastrada com o código informado.
-    boolean existsByWorkstationCode(String workstationCode);
+    // Verifica se já existe uma bancada cadastrada com o nome informado.
+    boolean existsByName(String name);
 
     Long id(Long id);
 }
