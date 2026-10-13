@@ -7,7 +7,9 @@ public enum LogType {
     PAUSE("Pausa de Produção"),
     RESUME("Retomada de Produção"),
     STOP("Parada de Produção"),
+    ASSEMBLY_FINISHED("Montagem Finalizada"),
     FINISH_BATCH("Conclusão do Lote"),
+    REWORK("Retrabalho"),
     HANDOVER_RELEASE("Passagem de Turno/Bancada"),
     HANDOVER_TAKE("Assunção de Turno/Bancada");
 

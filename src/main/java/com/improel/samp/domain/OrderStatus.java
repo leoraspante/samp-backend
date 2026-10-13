@@ -6,6 +6,7 @@ public enum OrderStatus {
     PENDING("Pendente"),
     IN_PROGRESS("Em Andamento"),
     PAUSED("Pausada"),
+    PENDING_INSPECTION("Aguardando Inspeção"),
     COMPLETED("Concluída"),
     CANCELLED("Cancelada");
 
