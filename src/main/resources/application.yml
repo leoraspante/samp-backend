@@ -3,6 +3,11 @@ spring:
   application:
     name: samp
 
+  # Configuração de Datas (Padrão BR e Fuso Horário)
+  jackson:
+    date-format: dd/MM/yyyy HH:mm:ss
+    time-zone: America/Sao_Paulo
+
   # Configuração do Banco de Dados (H2 - em Memória).
   datasource:
     url: jdbc:h2:mem:sampdb
