@@ -193,25 +193,29 @@ public class ProductionLogService {
         Workstation workstation =  workstationRepository.findById(workstationId)
                 .orElseThrow(() -> new IllegalArgumentException("Bancada não encontrada"));
 
+        // Busca uma atividade em execução.
         ProductionLog activeLog = productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME))
+                .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME || log.getLogType() == LogType.REWORK))
                 .orElseThrow(() -> new IllegalStateException("Nehuma atividade em andamento nesta bancada para finalizar."));
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Encerra o evento de montagem.
+        // 1. Encerra o evento de montagem e calcula os segundos líquidos deccoridos durante o ciclo.
         activeLog.setEndTimestamp(now);
-        activeLog.setDurationSeconds(Duration.between(activeLog.getStartTimestamp(), now).getSeconds());
+        long currentCycleSeconds = Duration.between(activeLog.getStartTimestamp(), now).getSeconds();
+        activeLog.setDurationSeconds(currentCycleSeconds);
         productionLogRepository.save(activeLog);
 
-        // Cria um marco pontual (Start e End iguais) apenas para registrar no histórico que houve a conclusão.
-        ProductionLog finishLog = new ProductionLog(null, activeLog.getProductionOrder(), workstation, activeLog.getOperator(), LogType.FINISH_BATCH, now);
-        finishLog.setEndTimestamp(now);
-
+        // 2. Acumula o tempo na Ordem de Produção e muda o status para Aguardando Inspeção.
         ProductionOrder order = activeLog.getProductionOrder();
-        order.setStatus(OrderStatus.COMPLETED);
-        order.setEndTime(now);
+        long previousTotalSeconds = (order.getTotalAssemblySeconds() != null) ? order.getTotalAssemblySeconds() : 0L;
+        order.setTotalAssemblySeconds(previousTotalSeconds +  currentCycleSeconds);
+        order.setStatus(OrderStatus.PENDING_INSPECTION);
         productionOrderRepository.save(order);
+
+        // 3. Cria um marco pontual mostrando que o operador finalizou a montagem.
+        ProductionLog finishLog = new ProductionLog(null, order, workstation, activeLog.getOperator(), LogType.ASSEMBLY_FINISHED, now);
+        finishLog.setEndTimestamp(now);
 
         return productionLogRepository.save(finishLog);
     }
@@ -390,5 +394,76 @@ public class ProductionLogService {
                     break;
             }
         }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // REGRAS DE NEGÓCIO - INSPEÇÃO E QUALIDADE (EXCLUSIVO GESTOR NO PAINEL WEB)
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    // 8. Gestor aprova a montagem, informa a quantidade real e encerra a OP.
+    @Transactional
+    public ProductionLog approveProduction(Long orderId, Integer approvedQuantity, Long managerId) {
+        ProductionOrder order = productionOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Ordem de Produção não Encontrada"));
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("Gestor não encontrado"));
+
+        if (order.getStatus() != OrderStatus.PENDING_INSPECTION) {
+            throw new IllegalArgumentException("A Ordem de Produção não está aguardando inspeção");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // Informa a quantidade de placas montadas, define a Ordem de Produção como concluída e registra a hora final.
+        int previousProducedQuantity = (order.getProducedQuantity() != null) ? order.getProducedQuantity() : 0;
+        order.setProducedQuantity(previousProducedQuantity + approvedQuantity);
+        order.setStatus(OrderStatus.COMPLETED);
+        order.setEndTime(now);
+        productionOrderRepository.save(order);
+
+        // Busca o último registro para identificar em qual bancada a montagem foi realizada.
+        ProductionLog lastLog = productionLogRepository.findFirstByProductionOrderOrderByStartTimestampDesc(order)
+                .orElseThrow(() -> new IllegalStateException("Histórico da Ordem de Produção não encontrado."));
+
+        // Cria o registro oficial de aprovação e acúmulo de quantidade.
+        ProductionLog approveLog = new ProductionLog(null, order, lastLog.getWorkstation(), lastLog.getOperator(), LogType.FINISH_BATCH, now);
+        approveLog.setTransferredFromUser(manager);
+        approveLog.setEndTimestamp(now);
+        approveLog.setCompletedQuantity(approvedQuantity);
+        approveLog.setRemarks("Lote aprovado pela inspeção de qualidade");
+
+        return productionLogRepository.save(approveLog);
+    }
+
+    // 9. Gestor reprova a montagem e devolve o lote para a bancada (Retrabalho).
+
+    @Transactional
+    public ProductionLog reworkProduction(Long orderId, String notes, Long managerId) {
+        ProductionOrder order = productionOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Ordem de Produção não encontrada"));
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("Gestor não encontrado"));
+
+        if (order.getStatus() != OrderStatus.PENDING_INSPECTION) {
+            throw new IllegalStateException("A Ordem de Produção não está aguardando inspeção");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // A Ordem de Produção volta para "Em Andamento" (O tempo volta a ser acumulado).
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        String existingNotes = order.getNotes() != null ? order.getNotes()+ " | " : "";
+        order.setNotes(existingNotes + "RETRABALHO: " + notes);
+        productionOrderRepository.save(order);
+
+        ProductionLog lastLog = productionLogRepository.findFirstByProductionOrderOrderByStartTimestampDesc(order)
+                .orElseThrow(() -> new IllegalStateException("Histórico da Ordem de Produção não encontrado."));
+
+        // O relógio da bancada volta a correr até que o operador aperte "Concluir" novamente.
+        ProductionLog reworkLog = new ProductionLog(null, order, lastLog.getWorkstation(), lastLog.getOperator(), LogType.REWORK, now);
+        reworkLog.setTransferredFromUser(manager);
+        reworkLog.setRemarks(notes);
+
+        return  productionLogRepository.save(reworkLog);
     }
 }
