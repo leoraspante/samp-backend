@@ -18,6 +18,4 @@ public interface WorkstationRepository extends JpaRepository<Workstation, Long> 
 
     // Verifica se já existe uma bancada cadastrada com o nome informado.
     boolean existsByName(String name);
-
-    Long id(Long id);
 }

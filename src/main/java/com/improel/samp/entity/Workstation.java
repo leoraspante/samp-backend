@@ -105,13 +105,13 @@ public class Workstation implements Serializable {
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         String formattedCreatedAt = (createdAt != null) ? createdAt.format(formatter) : "N/A";
-        String formattedUuid = (tabletUuid != null && tabletUuid.isBlank()) ? tabletUuid : "Não vinculado";
+        String formattedUuid = (tabletUuid != null && !tabletUuid.isBlank()) ? tabletUuid : "Não vinculado";
 
         return "Workstation {" +
                 "ID=" + id +
                 ", Bancada='" + name + '\'' +
                 ", Estado=" + (status != null ? status.getDescription() : "N/A") +
-                ", Tablet UUID='" + tabletUuid + '\'' +
+                ", Tablet UUID='" + formattedUuid + '\'' +
                 ", Criado em=" + formattedCreatedAt +
                 '}';
     }
