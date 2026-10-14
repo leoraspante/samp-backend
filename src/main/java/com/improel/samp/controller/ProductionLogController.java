@@ -86,10 +86,10 @@ public class ProductionLogController {
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-    // MÉTODOS DO GESTOR (HANDOVER)
+    // MÉTODOS DO GESTOR (HANDOVER E QUALIDADE / INSPEÇÃO)
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // 6. Liberta a Ordem de Serviço em andamento (Operador 1 deixa o serviço em que estava atualmente trabalhando).
+    // 6. Libera a Ordem de Serviço em andamento (Operador 1 deixa o serviço em que estava atualmente trabalhando).
     @PostMapping("/handover/release")
     public ResponseEntity<?> handoverRelease(@RequestBody HandoverReleaseRequest request) {
         try {
@@ -107,6 +107,28 @@ public class ProductionLogController {
             ProductionLog log = productionLogService.manageHandoverTake(request.orderId(), request.workstationId(), request.newOperatorId(), request.previousOperatorId());
             return ResponseEntity.ok(log);
         }  catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 8. Gestor aprova a montagem do lote e consolida a quantidade produzida.
+    @PostMapping("/approve")
+    public ResponseEntity<?> approveProduction(@RequestBody ApproveProductionRequest request) {
+        try {
+            ProductionLog log = productionLogService.approveProduction(request.productionOrderId(), request.approvedQuantity(), request.managerId());
+            return ResponseEntity.ok(log);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 9. Gestor reprova e envia o lote para retrabalho na bancada.
+    @PostMapping("/rework")
+    public ResponseEntity<?> reworkProduction(@RequestBody ReworkProductionRequest request) {
+        try {
+            ProductionLog log = productionLogService.reworkProduction(request.productionOrderId(), request.notes(), request.managerId());
+            return ResponseEntity.ok(log);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
