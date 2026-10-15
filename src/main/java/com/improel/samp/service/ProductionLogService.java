@@ -108,6 +108,11 @@ public class ProductionLogService {
         User operator = userRepository.findById(operatorId)
                 .orElseThrow(() -> new IllegalArgumentException("Operador não encontrado"));
 
+        // Impede o início de uma Ordem de Produção que já foi encerrada, cancelada, ou que aguarda inspeção.
+        if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.PENDING_INSPECTION) {
+            throw new IllegalStateException("Não é possivel iniciar uma Ordem de Produção com status: " + order.getStatus().getDescription());
+        }
+
         // Valida se a bancada já possui uma atividade em andamento (Log aberto sem data de fim).
         productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
                 .ifPresent(lastLog -> {
@@ -136,14 +141,19 @@ public class ProductionLogService {
 
         // Busca o evento que está rodando atualmente na bancada.
         ProductionLog activeLog = productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME))
+                .filter(log -> log.getEndTimestamp() == null && (
+                        log.getLogType() == LogType.START ||
+                        log.getLogType() == LogType.RESUME ||
+                        log.getLogType() == LogType.REWORK ||
+                        log.getLogType() == LogType.HANDOVER_TAKE))
                 .orElseThrow(() -> new IllegalStateException("Nenhuma atividade em andamento nesta bancada para pausar."));
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Encerra o evento atual e calcula o tempo líquido.
+        // Encerra o evento atual e calcula o tempo líquido trabalhado até a parada técnica.
         activeLog.setEndTimestamp(now);
-        activeLog.setDurationSeconds(Duration.between(activeLog.getStartTimestamp(), now).getSeconds());
+        long currentCycleSeconds = Duration.between(activeLog.getStartTimestamp(), now).toSeconds();
+        activeLog.setDurationSeconds(currentCycleSeconds);
         productionLogRepository.save(activeLog);
 
         // Cria o evento apontando a Pausa.
@@ -151,8 +161,10 @@ public class ProductionLogService {
         pauseLog.setPauseReason(reason);
         pauseLog.setRemarks(remarks);
 
-        // Altera o status da OP para PAUSED.
+        // Acumula o tempo trabalhado na Ordem de Produção e altera o status para PAUSED.
         ProductionOrder order = activeLog.getProductionOrder();
+        long previousTotalSeconds = (order.getTotalAssemblySeconds() != null)  ? order.getTotalAssemblySeconds() : 0L;
+        order.setTotalAssemblySeconds(previousTotalSeconds +  currentCycleSeconds);
         order.setStatus(OrderStatus.PAUSED);
         productionOrderRepository.save(order);
 
@@ -195,7 +207,11 @@ public class ProductionLogService {
 
         // Busca uma atividade em execução.
         ProductionLog activeLog = productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME || log.getLogType() == LogType.REWORK))
+                .filter(log -> log.getEndTimestamp() == null && (
+                        log.getLogType() == LogType.START ||
+                        log.getLogType() == LogType.RESUME ||
+                        log.getLogType() == LogType.REWORK ||
+                        log.getLogType() == LogType.HANDOVER_TAKE))
                 .orElseThrow(() -> new IllegalStateException("Nehuma atividade em andamento nesta bancada para finalizar."));
 
         LocalDateTime now = LocalDateTime.now();
@@ -230,16 +246,21 @@ public class ProductionLogService {
         Workstation workstation = workstationRepository.findById(workstationId)
                 .orElseThrow(() -> new IllegalArgumentException("Bancada não encontrada"));
 
-        // Busca a atividade em andamento na bancada.
+        // Busca a atividade de montagem em andamento na bancada.
         ProductionLog activeLog = productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                .filter(log -> log.getEndTimestamp() == null)
+                .filter(log -> log.getEndTimestamp() == null && (
+                        log.getLogType() == LogType.START ||
+                        log.getLogType() == LogType.RESUME ||
+                        log.getLogType() == LogType.REWORK ||
+                        log.getLogType() == LogType.HANDOVER_TAKE))
                 .orElseThrow(() -> new IllegalStateException("Nenhuma atividade em andamento nesta bancada para realizar a liberação."));
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Encerra atividade atual do operador 1.
+        // Encerra atividade atual do operador 1 e calcula o tempo líquido trabalhado.
         activeLog.setEndTimestamp(now);
-        activeLog.setDurationSeconds(Duration.between(activeLog.getStartTimestamp(), now).getSeconds());
+        long currentCycleSeconds = Duration.between(activeLog.getStartTimestamp(), now).getSeconds();
+        activeLog.setDurationSeconds(currentCycleSeconds);
         productionLogRepository.save(activeLog);
 
         // Cria o registro pontual de liberação com a quantidade parcial produzida.
@@ -248,10 +269,14 @@ public class ProductionLogService {
         releaseLog.setCompletedQuantity(partialQuantity != null ? partialQuantity : 0);
         releaseLog.setRemarks(remarks);
 
-        // Consolida a quantidade parcial montada na Ordem de Produção.
+        // Consolida o tempo trabalhado e a quantidade parcial montada na Ordem de Produção.
         ProductionOrder order = activeLog.getProductionOrder();
+        long previousTotalSeconds = (order.getTotalAssemblySeconds() != null) ? order.getTotalAssemblySeconds() : 0L;
+        order.setTotalAssemblySeconds(previousTotalSeconds + currentCycleSeconds);
+
         if (partialQuantity != null && partialQuantity > 0) {
-            order.setProducedQuantity(order.getProducedQuantity() + partialQuantity);
+            int previousProducedQuantity = (order.getProducedQuantity() != null) ? order.getProducedQuantity() : 0;
+            order.setProducedQuantity(previousProducedQuantity + partialQuantity);
         }
 
         // Pausa a OP temporariamente até que o novo operador assuma.
@@ -317,7 +342,7 @@ public class ProductionLogService {
             User operator = userRepository.findById(dto.operatorId())
                     .orElseThrow(() -> new IllegalArgumentException("Operador não encontrado: " + dto.operatorId()));
 
-            // Utiliza-se a hora do tablet em vez do tempo atual do servidor.
+            // Utiliza-se a hora do tablet em vez da hora atual do servidor.
             LocalDateTime eventTime = dto.recordedTimestamp();
 
             switch (dto.logType()){
@@ -339,10 +364,15 @@ public class ProductionLogService {
 
                 case PAUSE:
                     productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                            .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME))
+                            .filter(log -> log.getEndTimestamp() == null && (
+                                    log.getLogType() == LogType.START ||
+                                    log.getLogType() == LogType.RESUME ||
+                                    log.getLogType() == LogType.REWORK ||
+                                    log.getLogType() == LogType.HANDOVER_TAKE))
                             .ifPresent(activeLog -> {
                                 activeLog.setEndTimestamp(eventTime);
-                                activeLog.setDurationSeconds(Duration.between(activeLog.getStartTimestamp(), eventTime).getSeconds());
+                                long currentCycleSeconds = Duration.between(activeLog.getStartTimestamp(), eventTime).getSeconds();
+                                activeLog.setDurationSeconds(currentCycleSeconds);
                                 productionLogRepository.save(activeLog);
 
                                 ProductionLog pauseLog = new ProductionLog(null, order, workstation, operator, LogType.PAUSE, eventTime);
@@ -350,6 +380,8 @@ public class ProductionLogService {
                                 pauseLog.setRemarks(dto.remarks());
                                 productionLogRepository.save(pauseLog);
 
+                                long previousTotalSeconds = (order.getTotalAssemblySeconds() != null) ? order.getTotalAssemblySeconds() : 0L;
+                                order.setTotalAssemblySeconds(previousTotalSeconds + currentCycleSeconds);
                                 order.setStatus(OrderStatus.PAUSED);
                                 productionOrderRepository.save(order);
                             });
@@ -373,18 +405,24 @@ public class ProductionLogService {
 
                 case FINISH_BATCH:
                     productionLogRepository.findFirstByWorkstationOrderByStartTimestampDesc(workstation)
-                            .filter(log -> log.getEndTimestamp() == null && (log.getLogType() == LogType.START || log.getLogType() == LogType.RESUME))
+                            .filter(log -> log.getEndTimestamp() == null && (
+                                    log.getLogType() == LogType.START ||
+                                    log.getLogType() == LogType.RESUME ||
+                                    log.getLogType() == LogType.REWORK ||
+                                    log.getLogType() == LogType.HANDOVER_TAKE))
                             .ifPresent(activeLog -> {
                                 activeLog.setEndTimestamp(eventTime);
-                                activeLog.setDurationSeconds(Duration.between(activeLog.getStartTimestamp(), eventTime).getSeconds());
+                                long currentCycleSeconds = Duration.between(activeLog.getStartTimestamp(), eventTime).getSeconds();
+                                activeLog.setDurationSeconds(currentCycleSeconds);
                                 productionLogRepository.save(activeLog);
 
-                                ProductionLog finishLog = new ProductionLog(null, order, workstation, operator, LogType.FINISH_BATCH, eventTime);
+                                ProductionLog finishLog = new ProductionLog(null, order, workstation, operator, LogType.ASSEMBLY_FINISHED, eventTime);
                                 finishLog.setEndTimestamp(eventTime);
                                 productionLogRepository.save(finishLog);
 
-                                order.setStatus(OrderStatus.COMPLETED);
-                                order.setEndTime(eventTime);
+                                long previousTotalSeconds = (order.getTotalAssemblySeconds() != null) ? order.getTotalAssemblySeconds() : 0L;
+                                order.setTotalAssemblySeconds(previousTotalSeconds + currentCycleSeconds);
+                                order.setStatus(OrderStatus.PENDING_INSPECTION);
                                 productionOrderRepository.save(order);
                             });
                     break;
