@@ -8,11 +8,7 @@ import com.improel.samp.service.ProductionLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
@@ -27,6 +23,26 @@ public class ProductionLogController {
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // MÉTODOS DE CONSULTA (HISTÓRICO E LINHA DO TEMPO)
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    @GetMapping
+    public ResponseEntity<List<ProductionLogDTO>> findAll() {
+        List<ProductionLogDTO> logs = productionLogService.findAll().stream()
+                .map(ProductionLogDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(logs);
+    }
+
+    @GetMapping("{/id}")
+    public ResponseEntity<ProductionLogDTO> findById(@PathVariable Long id) {
+        return productionLogService.findById(id)
+                .map(ProductionLogDTO::fromEntity)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // MÉTODOS DO TABLET (OPERAÇÃO NO CHÃO DE FÁBRICA)
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -35,7 +51,7 @@ public class ProductionLogController {
     public ResponseEntity<?> startProduction(@RequestBody StartProductionRequest request) {
         try {
             ProductionLog log = productionLogService.startProduction(request.productionOrderId(), request.workstationId(), request.operatorId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(log);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -46,7 +62,7 @@ public class ProductionLogController {
     public ResponseEntity<?> pauseProduction(@RequestBody PauseProductionRequest request) {
         try {
             ProductionLog log = productionLogService.pauseProduction(request.workstationId(), request.reason(), request.remarks());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -57,7 +73,7 @@ public class ProductionLogController {
     public ResponseEntity<?> resumeProduction(@RequestBody WorkstationActionRequest request) {
         try {
             ProductionLog log = productionLogService.resumeProduction(request.workstationId());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -68,7 +84,7 @@ public class ProductionLogController {
     public ResponseEntity<?> completeProduction(@RequestBody WorkstationActionRequest request) {
         try {
             ProductionLog log = productionLogService.completeProduction(request.workstationId());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -94,7 +110,7 @@ public class ProductionLogController {
     public ResponseEntity<?> handoverRelease(@RequestBody HandoverReleaseRequest request) {
         try {
             ProductionLog log = productionLogService.manageHandoverRelease(request.workstationId(), request.partialQuantity(), request.remarks());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -105,7 +121,7 @@ public class ProductionLogController {
     public ResponseEntity<?> handoverTake(@RequestBody HandoverTakeRequest request) {
         try {
             ProductionLog log = productionLogService.manageHandoverTake(request.orderId(), request.workstationId(), request.newOperatorId(), request.previousOperatorId());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         }  catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -116,7 +132,7 @@ public class ProductionLogController {
     public ResponseEntity<?> approveProduction(@RequestBody ApproveProductionRequest request) {
         try {
             ProductionLog log = productionLogService.approveProduction(request.productionOrderId(), request.approvedQuantity(), request.managerId());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -127,7 +143,7 @@ public class ProductionLogController {
     public ResponseEntity<?> reworkProduction(@RequestBody ReworkProductionRequest request) {
         try {
             ProductionLog log = productionLogService.reworkProduction(request.productionOrderId(), request.notes(), request.managerId());
-            return ResponseEntity.ok(log);
+            return ResponseEntity.ok(ProductionLogDTO.fromEntity(log));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

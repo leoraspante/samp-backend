@@ -3,6 +3,7 @@
 package com.improel.samp.controller;
 
 import com.improel.samp.dto.PinAuthRequest;
+import com.improel.samp.dto.UserDTO;
 import com.improel.samp.entity.User;
 import com.improel.samp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +25,16 @@ public class UserController {
 
     // 1. Lista todos os usuários.
     @GetMapping
-    public ResponseEntity<List<User>> findAll() {
-        return ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<List<UserDTO>> findAll() {
+        List<UserDTO> users = userService.findAll().stream().map(UserDTO::fromEntity).toList();
+        return ResponseEntity.ok(users);
     }
 
     // 2. Busca um usuário pelo ID.
     @GetMapping("/{id}")
-    public ResponseEntity<User> findById(@PathVariable Long id) {
+    public ResponseEntity<UserDTO> findById(@PathVariable Long id) {
         return userService.getUserById(id)
+                .map(UserDTO::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -41,19 +44,18 @@ public class UserController {
     public ResponseEntity<?> create(@RequestBody User user) {
         try {
             User savedUser = userService.save(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+            return ResponseEntity.status(HttpStatus.CREATED).body(UserDTO.fromEntity(savedUser));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());    // Retorna 400 Bad Request se Matrícula/PIN/Email já existirem.
         }
     }
 
     // 4. Autenticação rápida por PIN (Utilizado pelo Tablet).
-    // POST: http://localhost:8080/api/users/login
     @PostMapping("/login")
     public ResponseEntity<?> loginByPin(@RequestBody PinAuthRequest request) {
         try{
             User user = userService.authenticateByPin(request.pinCode());
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(UserDTO.fromEntity(user));
         } catch (IllegalArgumentException e) {
             // Retorna 401 Unauthorized se o PIN for inválido.
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());

@@ -2,6 +2,7 @@
 
 package com.improel.samp.controller;
 
+import com.improel.samp.dto.ProductionOrderDTO;
 import com.improel.samp.entity.ProductionOrder;
 import com.improel.samp.service.ProductionOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,14 +24,16 @@ public class ProductionOrderController {
 
     // 1. Lista todas as Ordens de Produção.
     @GetMapping
-    public ResponseEntity<List<ProductionOrder>> findAll() {
-        return ResponseEntity.ok(productionOrderService.findAll());
+    public ResponseEntity<List<ProductionOrderDTO>> findAll() {
+        List<ProductionOrderDTO> orders = productionOrderService.findAll().stream().map(ProductionOrderDTO::fromEntity).toList();
+        return ResponseEntity.ok(orders);
     }
 
     // 2. Busca uma Ordem de Produção pelo seu ID.
     @GetMapping("/{id}")
-    public ResponseEntity<ProductionOrder> findById(@PathVariable Long id) {
+    public ResponseEntity<ProductionOrderDTO> findById(@PathVariable Long id) {
         return productionOrderService.findById(id)
+                .map(ProductionOrderDTO::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -40,7 +43,7 @@ public class ProductionOrderController {
     public ResponseEntity<?> create(@RequestBody ProductionOrder order) {
         try {
             ProductionOrder savedOrder = productionOrderService.save(order);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ProductionOrderDTO.fromEntity(savedOrder));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

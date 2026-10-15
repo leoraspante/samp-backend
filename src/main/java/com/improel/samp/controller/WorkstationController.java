@@ -2,6 +2,7 @@
 
 package com.improel.samp.controller;
 
+import com.improel.samp.dto.WorkstationDTO;
 import com.improel.samp.entity.Workstation;
 import com.improel.samp.service.WorkstationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,28 +23,25 @@ public class WorkstationController {
     }
 
     // 1. Lista todas as bancadas cadastradas.
-    // GET: http://localhost:8080/api/workstations
     @GetMapping
-    public ResponseEntity<List<Workstation>> findAll() {
-        List<Workstation> workstations = workstationService.findAll();
+    public ResponseEntity<List<WorkstationDTO>> findAll() {
+        List<WorkstationDTO> workstations = workstationService.findAll().stream().map(WorkstationDTO::fromEntity).toList();
         return ResponseEntity.ok(workstations);
     }
 
     // 2. Busca uma bancada específica pelo seu ID.
-    // GET: http://localhost:8080/api/workstations/1
     @GetMapping("/{id}")
-    public ResponseEntity<Workstation> findById(@PathVariable Long id) {
+    public ResponseEntity<WorkstationDTO> findById(@PathVariable Long id) {
         return workstationService.findById(id)
+                .map(WorkstationDTO::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());     // Retorna o erro 404, se não encontrar.
     }
 
     // 3. Cadastra uma nova bancada (Utilizado pelo painel do gestor).
-    // POST: http://localhost:8080/api/workstations
     @PostMapping
-    public ResponseEntity<Workstation> create(@RequestBody Workstation workstation) {
-        // O @RequestBody pega o JSON enviado na requisição e transforma no objeto Workstation.
+    public ResponseEntity<WorkstationDTO> create(@RequestBody Workstation workstation) {
         Workstation savedWorkstation = workstationService.save(workstation);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedWorkstation);    // Retorna 201 Created.
+        return ResponseEntity.status(HttpStatus.CREATED).body(WorkstationDTO.fromEntity(savedWorkstation));
     }
 }
