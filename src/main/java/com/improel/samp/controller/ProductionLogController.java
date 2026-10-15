@@ -34,7 +34,7 @@ public class ProductionLogController {
         return ResponseEntity.ok(logs);
     }
 
-    @GetMapping("{/id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ProductionLogDTO> findById(@PathVariable Long id) {
         return productionLogService.findById(id)
                 .map(ProductionLogDTO::fromEntity)
