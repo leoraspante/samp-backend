@@ -5,6 +5,7 @@ import com.improel.samp.entity.ShiftRecord;
 import com.improel.samp.entity.User;
 import com.improel.samp.entity.Workstation;
 import com.improel.samp.repository.ShiftRecordRepository;
+import com.improel.samp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class ShiftService {
     private static final java.time.format.DateTimeFormatter TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final ShiftRecordRepository shiftRecordRepository;
+    private final UserRepository userRepository;
 
     // Horários oficiais e tolerâncias.
     private static final LocalTime EXPECTED_START =  LocalTime.of(8, 0);
@@ -27,8 +29,9 @@ public class ShiftService {
     private static final LocalTime MAX_END_TOLERANCE = LocalTime.of(18, 0);
 
     @Autowired
-    public ShiftService(ShiftRecordRepository shiftRecordRepository) {
+    public ShiftService(ShiftRecordRepository shiftRecordRepository,  UserRepository userRepository) {
         this.shiftRecordRepository = shiftRecordRepository;
+        this.userRepository = userRepository;
     }
 
     // Registra a entrada do operador na bancada.
@@ -48,6 +51,7 @@ public class ShiftService {
             shift.setHasAnomaly(true);
             shift.setAnomalyNotes("Atraso no início da jornada. Entrada registrada às: " + now.toLocalTime().format(TIME_FORMATTER));
             operator.incrementShiftAnomalyCount();
+            userRepository.save(operator);
         }
 
         return shiftRecordRepository.save(shift);
@@ -68,6 +72,7 @@ public class ShiftService {
             String existingNotes = openShift.getAnomalyNotes() != null ? openShift.getAnomalyNotes()+ " | " : "";
             openShift.setAnomalyNotes(existingNotes + "Usuário não encerrou o sistema. Encerramento automático ocorreu às: " + now.toLocalTime().format(TIME_FORMATTER));
             operator.incrementShiftAnomalyCount();
+            userRepository.save(operator);
         }
         return shiftRecordRepository.save(openShift);
     }
