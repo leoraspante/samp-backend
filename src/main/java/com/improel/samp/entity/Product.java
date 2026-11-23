@@ -3,15 +3,23 @@
 package com.improel.samp.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.List;
 
 @Entity
-@Table(name = "tb_product")     // Nome da tabela no banco de dados.
+@Table(name = "tb_product")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class Product implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -22,13 +30,13 @@ public class Product implements Serializable {
     private Long id;
 
     @Column(name = "code", nullable = false, unique = true, length = 50)
-    private  String code;
+    private String code;
 
     @Column(name = "name", nullable = false, length = 100)
-    private  String name;
+    private String name;
 
     @Column(name = "description", length = 255)
-    private  String description;
+    private String description;
 
     @Column(name = "target_cycle_time_seconds")
     private Integer targetCycleTimeSeconds;
@@ -36,12 +44,11 @@ public class Product implements Serializable {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Construtores.
-    public Product() {}
-
+    // Construtor customizado.
     public Product(Long id, String code, String name, String description, Integer targetCycleTimeSeconds) {
         this.id = id;
         this.code = code;
@@ -51,76 +58,17 @@ public class Product implements Serializable {
         this.active = true;
     }
 
-    // Callback JPA para preencher a data de criação antes de salvar no banco de dados.
+    // Callback JPA para preencher a data de criação antes de salvar no banco de
+    // dados.
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Relacionamento Um-para-Muitos contemplando as fotos com instruções de montagem.
+    // Relacionamento Um-para-Muitos contemplando as fotos com instruções de
+    // montagem.
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Integer getTargetCycleTimeSeconds() {
-        return targetCycleTimeSeconds;
-    }
-
-    public void setTargetCycleTimeSeconds(Integer targetCycleTimeSeconds) {
-        this.targetCycleTimeSeconds = targetCycleTimeSeconds;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public List<ProductImage> getImages() {
-        return images;
-    }
-
-    public void setImages(List<ProductImage> images) {
-        this.images = images;
-    }
 
     // Métodos utilitários para auxiliar a gestão de fotos.
     public void addImage(ProductImage image) {
@@ -131,20 +79,6 @@ public class Product implements Serializable {
     public void removeImage(ProductImage image) {
         images.remove(image);
         image.setProduct(null);
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Product product = (Product) o;
-        return Objects.equals(id, product.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração.

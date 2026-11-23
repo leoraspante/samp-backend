@@ -5,13 +5,21 @@ package com.improel.samp.entity;
 import com.improel.samp.domain.OrderPriority;
 import com.improel.samp.domain.OrderStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 @Entity
-@Table(name = "tb_production_order")       // Nome da tabela no banco de dados.
+@Table(name = "tb_production_order")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class ProductionOrder implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -25,9 +33,10 @@ public class ProductionOrder implements Serializable {
     @Column(name = "order_number", nullable = false, unique = true, length = 50)
     private String orderNumber;
 
-    // Relacionamento Muitos-para-Um: Diversas OP podem estar atreladas ao mesmo Produto.
+    // Relacionamento Muitos-para-Um: Diversas OP podem estar atreladas ao mesmo
+    // Produto.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id",  nullable = false)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(name = "target_quantity", nullable = false)
@@ -44,7 +53,8 @@ public class ProductionOrder implements Serializable {
     @Column(name = "priority", nullable = false, length = 30)
     private OrderPriority priority = OrderPriority.MEDIUM;
 
-    // Tempo líquido total acumulado na montagem do lote em segundos (Campo reservado para futuras integrações).
+    // Tempo líquido total acumulado na montagem do lote em segundos (Campo
+    // reservado para futuras integrações).
     @Column(name = "total_assembly_seconds")
     private Long totalAssemblySeconds = 0L;
 
@@ -64,13 +74,13 @@ public class ProductionOrder implements Serializable {
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Construtores.
-    public ProductionOrder() {}
-
-    public ProductionOrder(Long id, String orderNumber, Product product, Integer targetQuantity, OrderStatus status, OrderPriority priority, LocalDateTime dueDate, String notes) {
+    // Construtor modificado.
+    public ProductionOrder(Long id, String orderNumber, Product product, Integer targetQuantity, OrderStatus status,
+            OrderPriority priority, LocalDateTime dueDate, String notes) {
         this.id = id;
         this.orderNumber = orderNumber;
         this.product = product;
@@ -83,125 +93,11 @@ public class ProductionOrder implements Serializable {
         this.notes = notes;
     }
 
-    // Callback JPA para preencher a data de criação antes de salvar no banco de dados.
+    // Callback JPA para preencher a data de criação antes de salvar no banco de
+    // dados.
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getOrderNumber() {
-        return orderNumber;
-    }
-
-    public void setOrderNumber(String orderNumber) {
-        this.orderNumber = orderNumber;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public Integer getTargetQuantity() {
-        return targetQuantity;
-    }
-
-    public void setTargetQuantity(Integer targetQuantity) {
-        this.targetQuantity = targetQuantity;
-    }
-
-    public Integer getProducedQuantity() {
-        return producedQuantity;
-    }
-
-    public void setProducedQuantity(Integer producedQuantity) {
-        this.producedQuantity = producedQuantity;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
-    public OrderPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(OrderPriority priority) {
-        this.priority = priority;
-    }
-
-    public Long getTotalAssemblySeconds() {
-        return totalAssemblySeconds;
-    }
-
-    public void setTotalAssemblySeconds(Long totalAssemblySeconds) {
-        this.totalAssemblySeconds = totalAssemblySeconds;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public LocalDateTime getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(LocalDateTime dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductionOrder that = (ProductionOrder) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração.

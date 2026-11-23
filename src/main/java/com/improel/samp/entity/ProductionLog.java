@@ -5,19 +5,27 @@ package com.improel.samp.entity;
 import com.improel.samp.domain.LogType;
 import com.improel.samp.domain.PauseReason;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 @Entity
-@Table(name = "tb_production_log")      // Nome da tabela no banco de dados.
+@Table(name = "tb_production_log")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class ProductionLog implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // Relacionamento Muitos-para-Um: A qual Ordem de Produção este log pertence.
@@ -32,10 +40,11 @@ public class ProductionLog implements Serializable {
 
     // Relacionamento Muitos-para-Um: Operador responsável pelo registro.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "operator_id",  nullable = false)
+    @JoinColumn(name = "operator_id", nullable = false)
     private User operator;
 
-    // Relacionamento Muitos-para-Um: Operador com quem foi feita a troca (Handover).
+    // Relacionamento Muitos-para-Um: Operador com quem foi feita a troca
+    // (Handover).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transferred_from_user_id")
     private User transferredFromUser;
@@ -60,7 +69,8 @@ public class ProductionLog implements Serializable {
     @Column(name = "duration_seconds")
     private Long durationSeconds = 0L;
 
-    // Quantidade de peças contabilizadas/apontadas nesta sessão (ex: parcial informada pelo gestor no Handover ou total na Conclusão).
+    // Quantidade de peças contabilizadas/apontadas nesta sessão (ex: parcial
+    // informada pelo gestor no Handover ou total na Conclusão).
     @Column(name = "completed_quantity")
     private Integer completedQuantity = 0;
 
@@ -68,13 +78,13 @@ public class ProductionLog implements Serializable {
     @Column(name = "remarks", length = 500)
     private String remarks;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Construtores.
-    public ProductionLog() {}
-
-    public ProductionLog(Long id, ProductionOrder productionOrder, Workstation workstation, User operator, LogType logType, LocalDateTime startTimestamp) {
+    // Construtor modificado.
+    public ProductionLog(Long id, ProductionOrder productionOrder, Workstation workstation, User operator,
+            LogType logType, LocalDateTime startTimestamp) {
         this.id = id;
         this.productionOrder = productionOrder;
         this.workstation = workstation;
@@ -83,128 +93,14 @@ public class ProductionLog implements Serializable {
         this.startTimestamp = (startTimestamp != null) ? startTimestamp : LocalDateTime.now();
     }
 
-    // Callback JPA para preencher a data de criação antes de salvar no banco de dados.
+    // Callback JPA para preencher a data de criação antes de salvar no banco de
+    // dados.
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.startTimestamp == null) {
             this.startTimestamp = LocalDateTime.now();
         }
-    }
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public ProductionOrder getProductionOrder() {
-        return productionOrder;
-    }
-
-    public void setProductionOrder(ProductionOrder productionOrder) {
-        this.productionOrder = productionOrder;
-    }
-
-    public Workstation getWorkstation() {
-        return workstation;
-    }
-
-    public void setWorkstation(Workstation workstation) {
-        this.workstation = workstation;
-    }
-
-    public User getOperator() {
-        return operator;
-    }
-
-    public void setOperator(User operator) {
-        this.operator = operator;
-    }
-
-    public User getTransferredFromUser() {
-        return transferredFromUser;
-    }
-
-    public void setTransferredFromUser(User transferredFromUser) {
-        this.transferredFromUser = transferredFromUser;
-    }
-
-    public LogType getLogType() {
-        return logType;
-    }
-
-    public void setLogType(LogType logType) {
-        this.logType = logType;
-    }
-
-    public PauseReason getPauseReason() {
-        return pauseReason;
-    }
-
-    public void setPauseReason(PauseReason pauseReason) {
-        this.pauseReason = pauseReason;
-    }
-
-    public LocalDateTime getStartTimestamp() {
-        return startTimestamp;
-    }
-
-    public void setStartTimestamp(LocalDateTime startTimestamp) {
-        this.startTimestamp = startTimestamp;
-    }
-
-    public LocalDateTime getEndTimestamp() {
-        return endTimestamp;
-    }
-
-    public void setEndTimestamp(LocalDateTime endTimestamp) {
-        this.endTimestamp = endTimestamp;
-    }
-
-    public Long getDurationSeconds() {
-        return durationSeconds;
-    }
-
-    public void setDurationSeconds(Long durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
-
-    public Integer getCompletedQuantity() {
-        return completedQuantity;
-    }
-
-    public void setCompletedQuantity(Integer completedQuantity) {
-        this.completedQuantity = completedQuantity;
-    }
-
-    public String getRemarks() {
-        return remarks;
-    }
-
-    public void setRemarks(String remarks) {
-        this.remarks = remarks;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProductionLog that = (ProductionLog) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração.

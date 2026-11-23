@@ -3,13 +3,20 @@
 package com.improel.samp.entity;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 @Entity
 @Table(name = "tb_shift_record")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class ShiftRecord implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -33,92 +40,20 @@ public class ShiftRecord implements Serializable {
     @Column(name = "logout_time")
     private LocalDateTime logoutTime;
 
-    // Sinaliza se ouve atraso no início da jornada, ou que o expediente não foi devidamente encerrado.
+    // Sinaliza se ouve atraso no início da jornada, ou que o expediente não foi
+    // devidamente encerrado.
     @Column(name = "has_anomaly", nullable = false)
     private Boolean hasAnomaly = false;
 
     @Column(name = "anomaly_notes", length = 255)
     private String anomalyNotes;
 
-    // Construtores.
-    public ShiftRecord() {}
-
+    // Construtor modificado.
     public ShiftRecord(User operator, Workstation workstation, LocalDateTime loginTime) {
         this.operator = operator;
         this.workstation = workstation;
         this.loginTime = loginTime;
         this.hasAnomaly = false;
-    }
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public User getOperator() {
-        return operator;
-    }
-
-    public void setOperator(User operator) {
-        this.operator = operator;
-    }
-
-    public Workstation getWorkstation() {
-        return workstation;
-    }
-
-    public void setWorkstation(Workstation workstation) {
-        this.workstation = workstation;
-    }
-
-    public LocalDateTime getLoginTime() {
-        return loginTime;
-    }
-
-    public void setLoginTime(LocalDateTime loginTime) {
-        this.loginTime = loginTime;
-    }
-
-    public LocalDateTime getLogoutTime() {
-        return logoutTime;
-    }
-
-    public void setLogoutTime(LocalDateTime logoutTime) {
-        this.logoutTime = logoutTime;
-    }
-
-    public Boolean getHasAnomaly() {
-        return hasAnomaly;
-    }
-
-    public void setHasAnomaly(Boolean hasAnomaly) {
-        this.hasAnomaly = hasAnomaly;
-    }
-
-    public String getAnomalyNotes() {
-        return anomalyNotes;
-    }
-
-    public void setAnomalyNotes(String anomalyNotes) {
-        this.anomalyNotes = anomalyNotes;
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ShiftRecord that = (ShiftRecord) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração.

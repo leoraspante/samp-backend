@@ -5,13 +5,21 @@ package com.improel.samp.entity;
 import com.improel.samp.domain.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 @Entity
-@Table(name = "tb_user")    // Nome da tabela no banco de dados.
+@Table(name = "tb_user")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -45,19 +53,19 @@ public class User implements Serializable {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
-    // Responsável por contabilizar esquecimentos de inicialização/encerramento do sistema.
+    // Responsável por contabilizar esquecimentos de inicialização/encerramento do
+    // sistema.
     @Column(name = "shift_anomaly_count", nullable = false)
     private Integer shiftAnomalyCount = 0;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Construtores;
-    public User() {}
-
-    public User(Long id, String full_Name, String registrationNumber, String email, String pinCode, Role role) {
+    // Construtor customizado.
+    public User(Long id, String fullName, String registrationNumber, String email, String pinCode, Role role) {
         this.id = id;
-        this.fullName = full_Name;
+        this.fullName = fullName;
         this.registrationNumber = registrationNumber;
         this.email = email;
         this.pinCode = pinCode;
@@ -67,87 +75,11 @@ public class User implements Serializable {
         this.shiftAnomalyCount = 0;
     }
 
-    // Callback JPA para preencher a data de criação antes de salvar no banco de dados.
+    // Callback JPA para preencher a data de criação antes de salvar no banco de
+    // dados.
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String full_Name) {
-        this.fullName = full_Name;
-    }
-
-    public String getRegistrationNumber() {
-        return registrationNumber;
-    }
-
-    public void setRegistrationNumber(String registrationNumber) {
-        this.registrationNumber = registrationNumber;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPinCode() {
-        return pinCode;
-    }
-
-    public void setPinCode(String pinCode) {
-        this.pinCode = pinCode;
-    }
-
-    public Boolean getAllowSamePinReuse() {
-        return allowSamePinReuse;
-    }
-
-    public void setAllowSamePinReuse(Boolean allowSamePinReuse) {
-        this.allowSamePinReuse = allowSamePinReuse;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public Integer getShiftAnomalyCount() {
-        return shiftAnomalyCount;
-    }
-
-    public void setShiftAnomalyCount(Integer shiftAnomalyCount) {
-        this.shiftAnomalyCount = shiftAnomalyCount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     // Métodos utilitários - Contabilização de não uso do sistema.
@@ -157,20 +89,6 @@ public class User implements Serializable {
 
     public void resetShiftAnomalyCount() {
         this.shiftAnomalyCount = 0;
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return Objects.equals(id, user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração (PIN oculto por segurança).

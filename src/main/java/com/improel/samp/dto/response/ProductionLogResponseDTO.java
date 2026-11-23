@@ -1,6 +1,6 @@
-// DTO para dados de logs de produção alinhado à entidade ProductionLog.
+﻿// DTO para dados de logs de produção alinhado à entidade ProductionLog.
 
-package com.improel.samp.dto;
+package com.improel.samp.dto.response;
 
 import com.improel.samp.domain.LogType;
 import com.improel.samp.domain.PauseReason;
@@ -8,7 +8,7 @@ import com.improel.samp.entity.ProductionLog;
 
 import java.time.LocalDateTime;
 
-public record ProductionLogDTO(
+public record ProductionLogResponseDTO(
         Long id,
         Long productionOrderId,
         Long workstationId,
@@ -24,8 +24,8 @@ public record ProductionLogDTO(
         LocalDateTime createdAt
 ) {
     // Converte a Entidade JPA ProductionLog para o DTO de resposta.
-    public static ProductionLogDTO fromEntity(ProductionLog log) {
-        return new ProductionLogDTO(
+    public static ProductionLogResponseDTO fromEntity(ProductionLog log) {
+        return new ProductionLogResponseDTO(
                 log.getId(),
                 log.getProductionOrder() != null ? log.getProductionOrder().getId() : null,
                 log.getWorkstation() != null ? log.getWorkstation().getId() : null,

@@ -1,12 +1,12 @@
-// DTO para recebimento de logs retidos no tablet durante queda de conexão.
+﻿// DTO para recebimento de logs retidos no tablet durante queda de conexão.
 
-package com.improel.samp.dto;
+package com.improel.samp.dto.request;
 
 import com.improel.samp.domain.LogType;
 import com.improel.samp.domain.PauseReason;
 import java.time.LocalDateTime;
 
-public record OfflineLogSyncDTO(
+public record OfflineLogSyncRequestDTO(
         Long productionOrderId,
         Long workstationId,
         Long operatorId,

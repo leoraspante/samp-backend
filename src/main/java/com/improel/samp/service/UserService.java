@@ -2,33 +2,31 @@
 
 package com.improel.samp.service;
 
+import com.improel.samp.dto.request.CreateUserRequestDTO;
 import com.improel.samp.entity.User;
+import com.improel.samp.exception.InvalidCredentialsException;
 import com.improel.samp.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
 
-    @Autowired
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
     // Busca todos os colaboradores cadastrados.
     @Transactional(readOnly = true)
-    public List<User> findAll(){
+    public List<User> findAll() {
         return userRepository.findAll();
     }
 
     // Busca um colaborador pelo ID.
     @Transactional(readOnly = true)
-    public Optional<User> getUserById(Long id){
+    public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
@@ -36,30 +34,38 @@ public class UserService {
     @Transactional(readOnly = true)
     public User authenticateByPin(String pinCode) {
         return userRepository.findByPinCode(pinCode)
-                .filter(User::getActive)
-                .orElseThrow(() -> new IllegalArgumentException("PIN invalido ou usuario inativo"));
+                .filter(user -> Boolean.TRUE.equals(user.getActive()))
+                .orElseThrow(() -> new InvalidCredentialsException("PIN invalido ou usuario inativo"));
     }
 
     // Busca colaborador pela matrícula funcional.
     @Transactional(readOnly = true)
-    public Optional<User> findByRegistrationNumber(String registrationNumber){
+    public Optional<User> findByRegistrationNumber(String registrationNumber) {
         return userRepository.findByRegistrationNumber(registrationNumber);
     }
 
-    // Salva ou atualiza um usuário, garantindo que não haja duplicidade de PIN, Matrícula ou E-mail.
+    // Cria um novo usuário a partir do DTO, garantindo que não haja duplicidade de PIN, Matrícula ou E-mail.
     @Transactional
-    public User save(User user){
-        if (user.getId() == null){
-            if(user.getPinCode() != null && userRepository.existsByPinCode(user.getPinCode())) {
-                throw new IllegalArgumentException("Já existe um colaborador cadastrado com esse PIN.");
-            }
-            if(user.getRegistrationNumber() != null && userRepository.existsByRegistrationNumber(user.getRegistrationNumber())) {
-                throw new IllegalArgumentException("Já existe um colaborador cadastrado com esta matrícula.");
-            }
-            if(user.getEmail() != null && userRepository.existsByEmail(user.getEmail())) {
-                throw new IllegalArgumentException("Já existe um colaborador cadastrado com este e-mail.");
-            }
+    public User create(CreateUserRequestDTO request) {
+        if (userRepository.existsByPinCode(request.pinCode())) {
+            throw new IllegalArgumentException("Já existe um colaborador cadastrado com esse PIN.");
         }
+        if (userRepository.existsByRegistrationNumber(request.registrationNumber())) {
+            throw new IllegalArgumentException("Já existe um colaborador cadastrado com esta matrícula.");
+        }
+        if (request.email() != null && !request.email().isBlank() && userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("Já existe um colaborador cadastrado com este e-mail.");
+        }
+
+        User user = new User(
+                null,
+                request.fullName(),
+                request.registrationNumber(),
+                request.email(),
+                request.pinCode(),
+                request.role()
+        );
+
         return userRepository.save(user);
     }
 }

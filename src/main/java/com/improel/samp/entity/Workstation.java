@@ -4,13 +4,21 @@ package com.improel.samp.entity;
 
 import com.improel.samp.domain.WorkstationStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 @Entity
-@Table(name = "tb_workstation")     // Nome da tabela no banco de dados.
+@Table(name = "tb_workstation")
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class Workstation implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -31,12 +39,11 @@ public class Workstation implements Serializable {
     @Column(name = "tablet_uuid", unique = true, length = 100)
     private String tabletUuid;
 
+    @Setter(AccessLevel.NONE)
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt ;
+    private LocalDateTime createdAt;
 
-    // Construtores.
-    public Workstation() {}
-
+    // Construtor customizado.
     public Workstation(Long id, String name, WorkstationStatus status, String tabletUuid) {
         this.id = id;
         this.name = name;
@@ -48,56 +55,6 @@ public class Workstation implements Serializable {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-    }
-
-    // Getters e Setters.
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public WorkstationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(WorkstationStatus status) {
-        this.status = status;
-    }
-
-    public String getTabletUuid() {
-        return tabletUuid;
-    }
-    public void setTabletUuid(String tabletUuid) {
-        this.tabletUuid = tabletUuid;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    // Equals() e HashCode().
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Workstation that = (Workstation) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     // toString personalizado para logs e depuração.

@@ -1,10 +1,10 @@
-// DTO enviado pelo tablet ao pausar a produção por algum motivo operacional.
+﻿// DTO enviado pelo tablet ao pausar a produção por algum motivo operacional.
 
-package com.improel.samp.dto;
+package com.improel.samp.dto.request;
 
 import com.improel.samp.domain.PauseReason;
 
-public record PauseProductionRequest(
+public record PauseProductionRequestDTO(
         Long productionOrderId,
         Long workstationId,
         Long operatorId,

@@ -3,9 +3,12 @@
 package com.improel.samp.service;
 
 import com.improel.samp.domain.OrderStatus;
+import com.improel.samp.dto.request.CreateProductionOrderRequestDTO;
+import com.improel.samp.entity.Product;
 import com.improel.samp.entity.ProductionOrder;
+import com.improel.samp.repository.ProductRepository;
 import com.improel.samp.repository.ProductionOrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +16,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ProductionOrderService {
 
     private final ProductionOrderRepository productionOrderRepository;
-
-    @Autowired
-    public ProductionOrderService(ProductionOrderRepository productionOrderRepository) {
-        this.productionOrderRepository = productionOrderRepository;
-    }
+    private final ProductRepository productRepository;
 
     // Lista todas as Ordens de Produção.
     @Transactional(readOnly = true)
@@ -40,18 +40,35 @@ public class ProductionOrderService {
         return productionOrderRepository.findByOrderNumber(orderNumber);
     }
 
-    // Lista todas as OPs com base em seu status (Ex: PENDING, IN_PROGRESS, COMPLETED).
+    // Lista todas as OPs com base em seu status (Ex: PENDING, IN_PROGRESS,
+    // COMPLETED).
     @Transactional(readOnly = true)
-    public List<ProductionOrder> findByStatus(OrderStatus status)  {
+    public List<ProductionOrder> findByStatus(OrderStatus status) {
         return productionOrderRepository.findByStatus(status);
     }
 
-    // Cria ou atualiza uma Ordem de Produção, validando duplicidade de número.
+    // Cria uma nova Ordem de Produção a partir do DTO, validando duplicidade de número e existência do produto.
     @Transactional
-    public ProductionOrder save(ProductionOrder order) {
-        if (order.getId() == null && order.getOrderNumber() != null && productionOrderRepository.existsByOrderNumber(order.getOrderNumber())) {
-            throw new IllegalArgumentException("Já existe uma Ordem de Produção cadastrada com este número");
+    public ProductionOrder create(CreateProductionOrderRequestDTO request) {
+        if (productionOrderRepository.existsByOrderNumber(request.orderNumber())) {
+            throw new IllegalArgumentException("Já existe uma Ordem de Produção cadastrada com este número.");
         }
+
+        Product product = productRepository.findById(request.productId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Produto não encontrado para o ID informado: " + request.productId()));
+
+        ProductionOrder order = new ProductionOrder(
+                null,
+                request.orderNumber(),
+                product,
+                request.targetQuantity(),
+                OrderStatus.PENDING,
+                request.priority(),
+                request.dueDate(),
+                request.notes()
+        );
+
         return productionOrderRepository.save(order);
     }
 
@@ -59,7 +76,8 @@ public class ProductionOrderService {
     @Transactional
     public ProductionOrder updateStatus(Long id, OrderStatus newStatus) {
         ProductionOrder order = productionOrderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ordem de Produção não encontrada para o ID informado: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Ordem de Produção não encontrada para o ID informado: " + id));
         order.setStatus(newStatus);
         return productionOrderRepository.save(order);
     }

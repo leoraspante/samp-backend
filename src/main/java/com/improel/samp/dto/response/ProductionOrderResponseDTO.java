@@ -1,16 +1,16 @@
-// DTO para dados de Ordens de Produção (OP) alinhado com a Entidade ProductionOrder.
+﻿// DTO para dados de Ordens de Produção (OP) alinhado com a Entidade ProductionOrder.
 
-package com.improel.samp.dto;
+package com.improel.samp.dto.response;
 
 import com.improel.samp.domain.OrderPriority;
 import com.improel.samp.domain.OrderStatus;
 import com.improel.samp.entity.ProductionOrder;
 import java.time.LocalDateTime;
 
-public record ProductionOrderDTO(
+public record ProductionOrderResponseDTO(
         Long id,
         String orderNumber,
-        ProductDTO product,
+        ProductResponseDTO product,
         Integer targetQuantity,
         Integer producedQuantity,
         OrderStatus status,
@@ -23,11 +23,11 @@ public record ProductionOrderDTO(
         LocalDateTime createdAt
 ) {
     // Converte a entidade JPA ProductionOrder para o DTO de resposta.
-    public static ProductionOrderDTO fromEntity(ProductionOrder order) {
-        return new ProductionOrderDTO(
+    public static ProductionOrderResponseDTO fromEntity(ProductionOrder order) {
+        return new ProductionOrderResponseDTO(
                 order.getId(),
                 order.getOrderNumber(),
-                order.getProduct() != null ? ProductDTO.fromEntity(order.getProduct()) : null,
+                order.getProduct() != null ? ProductResponseDTO.fromEntity(order.getProduct()) : null,
                 order.getTargetQuantity(),
                 order.getProducedQuantity(),
                 order.getStatus(),

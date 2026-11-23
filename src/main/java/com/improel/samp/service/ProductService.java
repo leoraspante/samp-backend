@@ -2,24 +2,20 @@
 
 package com.improel.samp.service;
 
+import com.improel.samp.dto.request.CreateProductRequestDTO;
 import com.improel.samp.entity.Product;
 import com.improel.samp.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
-
-    @Autowired
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
 
     // Lista todos os produtos cadastrados.
     @Transactional(readOnly = true)
@@ -41,10 +37,17 @@ public class ProductService {
 
     // Salva ou atualiza um produto garantindo que não haja duplicidade de código.
     @Transactional
-    public Product save(Product product) {
-        if (product.getId() == null && product.getCode() != null && productRepository.existsByCode(product.getCode())){
+    public Product create(CreateProductRequestDTO request) {
+        if (productRepository.existsByCode(request.code())) {
             throw new IllegalArgumentException("Já existe um produto cadastrado com este código");
         }
+        Product product = new Product(
+                null,
+                request.code(),
+                request.name(),
+                request.description(),
+                request.targetCycleTimeSeconds()
+        );
         return productRepository.save(product);
     }
 }

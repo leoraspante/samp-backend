@@ -6,7 +6,7 @@ import com.improel.samp.entity.User;
 import com.improel.samp.entity.Workstation;
 import com.improel.samp.repository.ShiftRecordRepository;
 import com.improel.samp.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -14,25 +14,19 @@ import java.time.LocalTime;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ShiftService {
 
     // Formato padrão para exibição de data/hora (HH:mm:ss).
-    private static final java.time.format.DateTimeFormatter TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final java.time.format.DateTimeFormatter TIME_FORMATTER = java.time.format.DateTimeFormatter
+            .ofPattern("HH:mm:ss");
 
     private final ShiftRecordRepository shiftRecordRepository;
     private final UserRepository userRepository;
 
     // Horários oficiais e tolerâncias.
-    private static final LocalTime EXPECTED_START =  LocalTime.of(8, 0);
     private static final LocalTime MAX_START_TOLERANCE = LocalTime.of(8, 15);
-    private static final LocalTime EXPECTED_END =  LocalTime.of(17, 30);
     private static final LocalTime MAX_END_TOLERANCE = LocalTime.of(18, 0);
-
-    @Autowired
-    public ShiftService(ShiftRecordRepository shiftRecordRepository,  UserRepository userRepository) {
-        this.shiftRecordRepository = shiftRecordRepository;
-        this.userRepository = userRepository;
-    }
 
     // Registra a entrada do operador na bancada.
     @Transactional
@@ -49,7 +43,8 @@ public class ShiftService {
         // Validação de Atraso (Tolerância de 15 minutos).
         if (now.toLocalTime().isAfter(MAX_START_TOLERANCE)) {
             shift.setHasAnomaly(true);
-            shift.setAnomalyNotes("Atraso no início da jornada. Entrada registrada às: " + now.toLocalTime().format(TIME_FORMATTER));
+            shift.setAnomalyNotes(
+                    "Atraso no início da jornada. Entrada registrada às: " + now.toLocalTime().format(TIME_FORMATTER));
             operator.incrementShiftAnomalyCount();
             userRepository.save(operator);
         }
@@ -69,8 +64,10 @@ public class ShiftService {
         // Validação de saída (Tolerância de 30 minutos após as 17:30)
         if (now.toLocalTime().isAfter(MAX_END_TOLERANCE)) {
             openShift.setHasAnomaly(true);
-            String existingNotes = openShift.getAnomalyNotes() != null ? openShift.getAnomalyNotes()+ " | " : "";
-            openShift.setAnomalyNotes(existingNotes + "Usuário não encerrou o sistema. Encerramento automático ocorreu às: " + now.toLocalTime().format(TIME_FORMATTER));
+            String existingNotes = openShift.getAnomalyNotes() != null ? openShift.getAnomalyNotes() + " | " : "";
+            openShift.setAnomalyNotes(
+                    existingNotes + "Usuário não encerrou o sistema. Encerramento automático ocorreu às: "
+                            + now.toLocalTime().format(TIME_FORMATTER));
             operator.incrementShiftAnomalyCount();
             userRepository.save(operator);
         }

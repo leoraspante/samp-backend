@@ -1,10 +1,10 @@
-// DTO para dados de produtos/placas alinhado à entidade Product.
+﻿// DTO para dados de produtos/placas alinhado à entidade Product.
 
-package com.improel.samp.dto;
+package com.improel.samp.dto.response;
 
 import com.improel.samp.entity.Product;
 
-public record ProductDTO(
+public record ProductResponseDTO(
         Long id,
         String code,
         String name,
@@ -13,8 +13,8 @@ public record ProductDTO(
         Boolean active
 ) {
     // Converte a entidade JPA Product para o DTO de resposta.
-    public static ProductDTO fromEntity(Product product) {
-        return new ProductDTO(
+    public static ProductResponseDTO fromEntity(Product product) {
+        return new ProductResponseDTO(
                 product.getId(),
                 product.getCode(),
                 product.getName(),
