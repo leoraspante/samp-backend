@@ -28,6 +28,14 @@ spring:
 server:
   port: 8080
 
+# Configurações de jornada e tolerâncias do SAMP.
+samp:
+  shift:
+    expected-start: "08:00"
+    max-start-tolerance: "08:15"
+    expected-end: "17:30"
+    max-end-tolerance: "18:00"
+
 # Configuração de produção (PostgreSQL)
 # spring:
 #   datasource:

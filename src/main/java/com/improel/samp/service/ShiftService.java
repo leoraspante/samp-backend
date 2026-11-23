@@ -1,6 +1,7 @@
 // Serviço responsável pelo controle de jornada e tolerâncias de hoário.
 package com.improel.samp.service;
 
+import com.improel.samp.config.ShiftProperties;
 import com.improel.samp.entity.ShiftRecord;
 import com.improel.samp.entity.User;
 import com.improel.samp.entity.Workstation;
@@ -10,12 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class ShiftService {
+
+    private final ShiftProperties shiftProperties;
 
     // Formato padrão para exibição de data/hora (HH:mm:ss).
     private static final java.time.format.DateTimeFormatter TIME_FORMATTER = java.time.format.DateTimeFormatter
@@ -23,10 +25,6 @@ public class ShiftService {
 
     private final ShiftRecordRepository shiftRecordRepository;
     private final UserRepository userRepository;
-
-    // Horários oficiais e tolerâncias.
-    private static final LocalTime MAX_START_TOLERANCE = LocalTime.of(8, 15);
-    private static final LocalTime MAX_END_TOLERANCE = LocalTime.of(18, 0);
 
     // Registra a entrada do operador na bancada.
     @Transactional
@@ -41,7 +39,7 @@ public class ShiftService {
         ShiftRecord shift = new ShiftRecord(operator, workstation, now);
 
         // Validação de Atraso (Tolerância de 15 minutos).
-        if (now.toLocalTime().isAfter(MAX_START_TOLERANCE)) {
+        if (now.toLocalTime().isAfter(shiftProperties.getMaxStartTolerance())) {
             shift.setHasAnomaly(true);
             shift.setAnomalyNotes(
                     "Atraso no início da jornada. Entrada registrada às: " + now.toLocalTime().format(TIME_FORMATTER));
@@ -62,7 +60,7 @@ public class ShiftService {
         openShift.setLogoutTime(now);
 
         // Validação de saída (Tolerância de 30 minutos após as 17:30)
-        if (now.toLocalTime().isAfter(MAX_END_TOLERANCE)) {
+        if (now.toLocalTime().isAfter(shiftProperties.getMaxEndTolerance())) {
             openShift.setHasAnomaly(true);
             String existingNotes = openShift.getAnomalyNotes() != null ? openShift.getAnomalyNotes() + " | " : "";
             openShift.setAnomalyNotes(
